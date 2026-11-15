@@ -22,7 +22,6 @@ def implied_volatility_call(
 
     # Newton-Raphson iterations
     for iteration in range(max_iterations):
-        print(f"Itération {iteration + 1} : sigma = {sigma:.10f}")
 
         # Calculate theoretical price
         theoretical_price = black_scholes_call(
@@ -78,8 +77,6 @@ def implied_volatility_put(
     sigma = initial_sigma
 
     for iteration in range(max_iterations):
-
-        print(f"Itération {iteration + 1} : sigma = {sigma:.10f}")
 
         # Calcul du prix théorique du Put
         theoretical_price = black_scholes_put(
