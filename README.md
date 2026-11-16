@@ -121,7 +121,7 @@ Créer et activer un environnement virtuel (Windows PowerShell) :
 
 ```powershell
 python -m venv .venv
-.venv\\Scripts\\Activate.ps1
+.venv\Scripts\Activate.ps1
 ```
 
 Installer les dépendances :
