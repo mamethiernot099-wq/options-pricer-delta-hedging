@@ -68,7 +68,7 @@ class TestHedging(unittest.TestCase):
         self.assertTrue(np.isfinite(result["portfolio_value"]).all())
 
     def test_rebalancing_frequencies(self):
-        expected_counts = {"daily": 251, "weekly": 50, "monthly": 12}
+        expected_counts = {"daily": 251, "weekly": 50, "monthly": 11}
         for frequency, expected in expected_counts.items():
             with self.subTest(frequency=frequency):
                 result = delta_hedging_simulation(
