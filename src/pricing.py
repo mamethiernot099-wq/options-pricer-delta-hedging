@@ -8,10 +8,18 @@ def _validate_inputs(S0, K, T, r, sigma):
     Vérifie la validité des paramètres du modèle Black-Scholes.
     """
 
-    parameters = [S0, K, T, r, sigma]
+    parameter_names = ("S0", "K", "T", "r", "sigma")
+    parameters = (S0, K, T, r, sigma)
 
-    if not all(math.isfinite(x) for x in parameters):
-        raise ValueError("Tous les paramètres doivent être finis.")
+    # Les paramètres doivent être des scalaires numériques réels.
+    for name, value in zip(parameter_names, parameters):
+        if isinstance(value, (bool, np.bool_)) or not isinstance(
+            value, (int, float, np.integer, np.floating)
+        ):
+            raise ValueError(f"{name} doit être un nombre réel.")
+
+        if not math.isfinite(float(value)):
+            raise ValueError(f"{name} doit être fini.")
 
     if S0 <= 0:
         raise ValueError("Le prix initial S0 doit être positif.")
