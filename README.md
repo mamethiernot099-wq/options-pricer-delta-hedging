@@ -109,7 +109,7 @@ The project relies on several fundamental quantitative finance techniques:
 Clone the repository:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/options-pricer-delta-hedging.git
+git clone https://github.com/mamethiernot099-wq/options-pricer-delta-hedging.git
 cd options-pricer-delta-hedging
 ```
 
