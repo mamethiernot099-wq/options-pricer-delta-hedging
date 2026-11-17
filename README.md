@@ -1,20 +1,48 @@
-# Pricer d'options & Delta Hedging
+# Options Pricer & Delta Hedging
 
-Projet de finance quantitative réalisé en Python dans le cadre d'un parcours de Master en ingénierie financière. Le dépôt regroupe des méthodes de valorisation d'options, de calcul des sensibilités, d'extraction de volatilité implicite et de couverture dynamique.
+**Projet de finance quantitative en Python** — valorisation d'options, simulation Monte-Carlo, sensibilités (Greeks), volatilité implicite et couverture dynamique Delta.
 
-## 1. Objectifs
+Ce dépôt rassemble des outils de calcul réutilisables dans `src/`, des tests automatisés dans `tests/` et une étude numérique complète dans le notebook `notebooks/analysis.ipynb`.
 
-Le projet vise à relier les modèles mathématiques de la finance aux méthodes numériques et à l'analyse du risque :
+---
 
-- valoriser des options européennes avec Black-Scholes et Monte-Carlo ;
-- réduire la variance d'un estimateur Monte-Carlo par variables antithétiques ;
-- étudier une option asiatique arithmétique ;
-- calculer et valider les Grecques ;
-- retrouver la volatilité implicite par Newton-Raphson sécurisé ;
-- analyser une chaîne d'options réelle AAPL ;
-- simuler une couverture Delta-Neutre et mesurer l'effet de la fréquence de rebalancement et des coûts de transaction.
+## Sommaire
 
-## 2. Architecture
+- [Objectifs](#-objectifs)
+- [Contenu du projet](#-contenu-du-projet)
+- [Résultats et visualisations](#-résultats-et-visualisations)
+- [Modèle et hypothèses](#-modèle-et-hypothèses)
+- [Installation](#-installation)
+- [Exécuter le notebook](#-exécuter-le-notebook)
+- [Lancer les tests](#-lancer-les-tests)
+- [Limites et pistes d'amélioration](#-limites-et-pistes-damélioration)
+
+## Objectifs
+
+Le projet a pour objectifs de :
+
+- valoriser des options européennes avec le modèle de Black-Scholes et des méthodes de Monte-Carlo ;
+- étudier la réduction de variance par variables antithétiques ;
+- valoriser une option asiatique à moyenne arithmétique ;
+- calculer les principales sensibilités d'une option (Delta, Gamma, Vega, Theta et Rho) ;
+- retrouver la volatilité implicite à partir d'un prix d'option ;
+- confronter les calculs à une chaîne d'options réelle sur **AAPL** ;
+- simuler une couverture Delta et analyser l'effet de la fréquence de rebalancement et des coûts de transaction.
+
+## Contenu du projet
+
+Le notebook suit six parties progressives :
+
+| Partie | Contenu |
+|---|---|
+| 1. Pricing européen | Black-Scholes, Monte-Carlo, intervalle de confiance et variables antithétiques |
+| 2. Option asiatique | Simulation Monte-Carlo d'un Call asiatique à moyenne arithmétique |
+| 3. Grecques | Calcul des sensibilités et comparaison avec les différences finies |
+| 4. Volatilité implicite | Résolution numérique et validation sur des cas synthétiques |
+| 5. Données AAPL | Analyse d'une chaîne d'options et comparaison des volatilités implicites |
+| 6. Delta Hedging | Simulation GBM, fréquences de couverture, coûts et distribution du P&L |
+
+### Architecture
 
 ```text
 options-pricer-delta-hedging/
@@ -30,136 +58,159 @@ options-pricer-delta-hedging/
 │   ├── test_greeks.py
 │   ├── test_volatility.py
 │   └── test_hedging.py
-├── figures/
-└── notebooks/
-    └── analysis.ipynb
+├── notebooks/
+│   └── analysis.ipynb
+└── figures/
+    └── graphiques générés par le notebook
 ```
 
-Le dossier `src/` contient les moteurs de calcul réutilisables. Le notebook est consacré aux expériences numériques, aux graphiques et à leur interprétation financière.
+- **`src/`** : fonctions de pricing, de calcul des Grecques, de volatilité implicite et de couverture.
+- **`tests/`** : tests unitaires des modules Python.
+- **`notebooks/analysis.ipynb`** : expériences, visualisations et interprétation financière.
+- **`figures/`** : graphiques exportés par le notebook.
 
-## 3. Modules quantitatifs
+## Résultats et visualisations
 
-### 3.1 Pricing
+Les figures ci-dessous sont enregistrées dans `figures/`. Elles sont également régénérées lors de l'exécution des cellules correspondantes du notebook.
 
-- Prix des Calls et Puts européens par Black-Scholes, sans dividendes.
-- Monte-Carlo standard avec intervalle de confiance à 95 %.
-- Monte-Carlo à variables antithétiques.
-- Valorisation Monte-Carlo d'un Call asiatique à moyenne arithmétique discrétisée.
+### Convergence Monte-Carlo
 
-La convergence des estimateurs est comparée au prix analytique de Black-Scholes. La réduction de variance est étudiée à nombre de trajectoires comparable.
+![Convergence Monte-Carlo](figures/convergence_monte_carlo.png)
 
-### 3.2 Grecques
+### Sensibilités — Greeks
 
-Calcul analytique de :
+| Delta | Gamma |
+|---|---|
+| ![Profil Delta](figures/delta_profile.png) | ![Profil Gamma](figures/gamma_profile.png) |
 
-- Delta : sensibilité au prix du sous-jacent ;
-- Gamma : sensibilité du Delta au sous-jacent ;
-- Vega : sensibilité à la volatilité ;
-- Theta : décroissance temporelle ;
-- Rho : sensibilité au taux sans risque.
+| Vega | Theta |
+|---|---|
+| ![Profil Vega](figures/vega_profile.png) | ![Profil Theta](figures/theta_profile.png) |
 
-Les formules sont confrontées à des approximations par différences finies. Convention : Vega et Rho sont les dérivées par rapport à une variation de 1,00 des entrées décimales ; Theta est annualisé et défini par `-dV/dT`.
+![Theta selon la maturité](figures/theta_maturity.png)
 
-### 3.3 Volatilité implicite
+### Volatilité implicite et données AAPL
 
-La volatilité implicite est obtenue en inversant le prix Black-Scholes. Newton-Raphson est la méthode principale ; une dichotomie de sauvegarde est utilisée lorsque le pas de Newton n'est pas admissible ou que Vega est trop faible.
+| Smile de volatilité | Skew de volatilité |
+|---|---|
+| ![Volatility smile](figures/volatility_smile.png) | ![Volatility skew](figures/volatility_skew.png) |
 
-Le notebook vérifie la récupération de volatilités connues sur Calls et Puts, puis applique le solveur aux prix mid d'une chaîne d'options AAPL récupérée avec `yfinance`. La volatilité implicite du modèle est comparée à celle publiée par Yahoo Finance.
+| Calls AAPL | Puts AAPL |
+|---|---|
+| ![Comparaison Calls AAPL](figures/aapl_calls_comparison.png) | ![Comparaison Puts AAPL](figures/aapl_puts_comparison.png) |
 
-### 3.4 Delta Hedging
+### Delta Hedging
 
-Le moteur simule une position courte sur un Call européen et sa couverture par le sous-jacent et un compte espèces rémunéré au taux sans risque.
+La couverture est comparée sur une trajectoire commune pour trois fréquences : quotidienne (**Daily**), hebdomadaire (**Weekly**, tous les 5 pas) et mensuelle (**Monthly**, tous les 21 pas).
 
-Le notebook compare :
-- rebalancement quotidien ;
-- rebalancement hebdomadaire (tous les 5 pas) ;
-- rebalancement mensuel (tous les 21 pas) ;
-- coûts de transaction de 0, 5 et 10 points de base.
+![Simulation GBM](figures/gbm_simulation.png)
 
-Une première comparaison utilise une trajectoire commune. Une étude complémentaire répète les simulations sur plusieurs trajectoires GBM afin d'étudier la distribution du P&L terminal, son écart-type et son RMSE.
+![P&L selon la fréquence de couverture](figures/delta_hedging_frequency.png)
 
-**Périmètre actuel :** l'étude de couverture est une simulation sous GBM à taux et volatilité constants, sous la mesure risque-neutre. Elle ne constitue pas un backtest historique du S&P 500 ou du CAC 40. Les données réelles sont actuellement utilisées pour l'étude de la chaîne d'options AAPL.
+![Impact des coûts de transaction](figures/delta_hedging_transaction_costs.png)
 
-## 4. Hypothèses et limites
+Une étude Monte-Carlo complémentaire répète la couverture sur **300 trajectoires** afin d'étudier la distribution du P&L terminal selon la fréquence de rebalancement.
 
-Les résultats reposent notamment sur les hypothèses suivantes :
+![Distribution du P&L terminal](figures/delta_hedging_pnl_distribution.png)
 
-- options européennes ;
-- modèle Black-Scholes sans dividendes pour les fonctions de pricing et de volatilité implicite ;
-- taux sans risque et volatilité constants dans les simulations de couverture ;
-- dynamique GBM continue échantillonnée à dates discrètes ;
-- coûts de transaction proportionnels au notionnel échangé ;
-- absence de sauts, de contraintes de liquidité, de bid-ask sur la couverture et de financement différencié.
+## Modèle et hypothèses
 
-Les résultats doivent donc être interprétés comme une étude pédagogique et quantitative, et non comme une recommandation d'investissement.
+### Pricing et volatilité
 
-## 5. Figures générées
+Les fonctions de pricing et de volatilité implicite s'appuient sur Black-Scholes pour des options européennes, avec les conventions précisées dans le code. La volatilité implicite est obtenue par Newton-Raphson sécurisé, avec une méthode de dichotomie de sauvegarde lorsque l'itération de Newton n'est pas exploitable.
 
-Le notebook enregistre les figures dans `figures/` :
+### Couverture Delta
 
-- `convergence_monte_carlo.png` — convergence des estimateurs ;
-- `delta_profile.png`, `gamma_profile.png`, `vega_profile.png`, `theta_profile.png`, `theta_maturity.png` — profils des sensibilités ;
-- `volatility_smile.png`, `volatility_skew.png` — smile et skew synthétiques ;
-- `aapl_calls_comparison.png`, `aapl_puts_comparison.png` — comparaison des volatilités implicites AAPL ;
-- `gbm_simulation.png` — trajectoire GBM ;
-- `delta_hedging_frequency.png` — P&L selon la fréquence ;
-- `delta_hedging_transaction_costs.png` — effet des coûts ;
-- `delta_hedging_pnl_distribution.png` — distribution du P&L terminal sur plusieurs trajectoires.
+Le moteur de couverture simule une position courte sur un Call européen, couverte par le sous-jacent et un compte espèces rémunéré au taux sans risque. La dynamique du sous-jacent est simulée par un mouvement brownien géométrique (GBM).
 
-Les figures sont générées lors de l'exécution du notebook ; elles ne sont pas nécessairement présentes dans un clone avant cette exécution.
+L'étude compare :
+- trois fréquences de rebalancement : Daily, Weekly et Monthly ;
+- trois niveaux de coûts de transaction : 0, 5 et 10 points de base ;
+- une trajectoire commune pour comparer les stratégies dans les mêmes conditions ;
+- 300 trajectoires simulées pour analyser la distribution du P&L terminal.
 
-## 6. Installation
+**Périmètre :** la partie Delta Hedging est une expérience de simulation sous mesure risque-neutre, avec taux et volatilité constants. Elle ne constitue pas un backtest historique. Les données de marché réelles sont utilisées dans la partie consacrée à la chaîne d'options AAPL.
 
-Cloner le dépôt :
+## Installation
+
+### 1. Cloner le dépôt
 
 ```bash
 git clone https://github.com/mamethiernot099-wq/options-pricer-delta-hedging.git
 cd options-pricer-delta-hedging
 ```
 
-Créer et activer un environnement virtuel (Windows PowerShell) :
+### 2. Créer un environnement virtuel
+
+**Windows PowerShell :**
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
-Installer les dépendances :
+**macOS / Linux :**
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Installer les dépendances
+
+```bash
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## 7. Exécution
+## Exécuter le notebook
 
-Depuis la racine du dépôt :
+Depuis la racine du projet :
 
 ```bash
 jupyter notebook notebooks/analysis.ipynb
 ```
 
-Dans VS Code, ouvrir le dossier racine du dépôt, sélectionner l'interpréteur `.venv`, puis exécuter les cellules dans l'ordre avec **Run All**. La première cellule configure le chemin du projet et crée le dossier `figures/` si nécessaire.
+Dans **Visual Studio Code** :
 
-La partie AAPL nécessite une connexion Internet et l'accès aux données Yahoo Finance. Les expirations disponibles sont sélectionnées dynamiquement parmi les dates futures renvoyées par le fournisseur.
+1. Ouvrir le dossier racine du dépôt.
+2. Ouvrir `notebooks/analysis.ipynb`.
+3. Sélectionner le noyau Python de l'environnement `.venv`.
+4. Exécuter les cellules dans l'ordre, ou utiliser **Run All**.
 
-## 8. Tests
+La première cellule prépare les chemins du projet et le dossier `figures/`. La partie consacrée à AAPL nécessite une connexion Internet et l'accès aux données fournies par Yahoo Finance via `yfinance`.
 
-Lancer l'ensemble des tests depuis la racine :
+## Lancer les tests
+
+Depuis la racine du dépôt, avec l'environnement virtuel activé :
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-Les 42 tests des quatre modules ont été exécutés avec succès dans l'environnement de développement local au cours de la validation du projet.
+Cette commande exécute les tests des modules de pricing, des Grecques, de volatilité implicite et de couverture. Le résultat affiché dans le terminal permet de vérifier le nombre de tests exécutés et leur statut.
 
-## 9. Pistes d'extension
+## Limites et pistes d'amélioration
 
-- backtest de Delta Hedging sur données historiques S&P 500 ou CAC 40 ;
-- calibration de la volatilité implicite et prise en compte des dividendes ;
-- décomposition plus détaillée du P&L par effets Delta, Gamma, Vega et Theta ;
-- modélisation de coûts de transaction et de contraintes de liquidité plus réalistes.
+Les résultats doivent être interprétés à la lumière des hypothèses de modélisation, notamment :
+
+- options européennes et cadre Black-Scholes ;
+- taux sans risque et volatilité constants dans les simulations de couverture ;
+- trajectoires GBM sans sauts ;
+- rééquilibrages à dates discrètes ;
+- coûts de transaction proportionnels au notionnel échangé ;
+- absence de modélisation détaillée de la liquidité, du bid-ask et de contraintes de financement différenciées.
+
+Pistes d'extension possibles :
+
+- réaliser un backtest de couverture sur données historiques ;
+- intégrer les dividendes et une structure de taux plus réaliste ;
+- étudier plus finement la contribution des effets Delta, Gamma, Vega et Theta au P&L ;
+- enrichir le modèle de coûts et intégrer des contraintes de liquidité.
 
 ---
 
 **Auteur :** Mame Thierno Thiam  
-**Domaine :** Finance quantitative, mathématiques appliquées et gestion des risques
+**Domaine :** Finance quantitative · Mathématiques appliquées · Gestion des risques
+
+*Projet pédagogique et quantitatif — ne constitue pas un conseil en investissement.*
