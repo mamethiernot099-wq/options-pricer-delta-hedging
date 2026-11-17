@@ -1,156 +1,105 @@
+"""Black-Scholes Greeks for European options without dividends.
+
+Conventions:
+- Vega is the derivative with respect to volatility expressed as a decimal
+  (a change of 1.00, i.e. 100 percentage points).
+- Rho is the derivative with respect to the continuously compounded rate
+  expressed as a decimal (a change of 1.00).
+- Theta is annualized calendar-time decay, equal to -dV/dT.
+"""
 
 import math
+
 from scipy.stats import norm
 
 from src.pricing import _calculate_d1_d2
 
 
 def delta_call(S0, K, T, r, sigma):
-    """
-    Calculate the Delta of a European Call.
-    """
-
+    """Return the spot sensitivity of a European Call."""
     d1, _ = _calculate_d1_d2(S0, K, T, r, sigma)
-
     return float(norm.cdf(d1))
 
 
 def delta_put(S0, K, T, r, sigma):
-    """
-    Calculate the Delta of a European Put.
-    """
-
+    """Return the spot sensitivity of a European Put."""
     d1, _ = _calculate_d1_d2(S0, K, T, r, sigma)
+    return float(norm.cdf(d1) - 1.0)
 
-    return float(norm.cdf(d1) - 1)
 
 def gamma(S0, K, T, r, sigma):
-    """
-    Calculate the Gamma of a European Call or Put.
-    Gamma is identical for Calls and Puts.
-    """
-
+    """Return the second spot derivative; identical for Call and Put."""
     d1, _ = _calculate_d1_d2(S0, K, T, r, sigma)
+    value = norm.pdf(d1) / (S0 * sigma * math.sqrt(T))
+    return float(value)
 
-    gamma_value = (
-        norm.pdf(d1)
-        / (S0 * sigma * math.sqrt(T))
-    )
-
-    return float(gamma_value)
 
 def vega(S0, K, T, r, sigma):
-    """
-    Calculate the Vega of a European Call or Put.
-
-    The result is expressed for a volatility change
-    of 1.00 (100 percentage points).
-    """
-
+    """Return dV/dsigma for a volatility change expressed as a decimal."""
     d1, _ = _calculate_d1_d2(S0, K, T, r, sigma)
+    return float(S0 * norm.pdf(d1) * math.sqrt(T))
 
-    vega_value = (
-        S0 * norm.pdf(d1) * math.sqrt(T)
-    )
-
-    return float(vega_value)
 
 def theta_call(S0, K, T, r, sigma):
-    """
-    Calculate the annualized Theta of a European Call.
-    """
-
+    """Return annualized Call theta, i.e. -dV/dT."""
     d1, d2 = _calculate_d1_d2(S0, K, T, r, sigma)
-
-    theta_value = (
-        -S0 * norm.pdf(d1) * sigma / (2 * math.sqrt(T))
+    value = (
+        -S0 * norm.pdf(d1) * sigma / (2.0 * math.sqrt(T))
         - r * K * math.exp(-r * T) * norm.cdf(d2)
     )
-
-    return float(theta_value)
+    return float(value)
 
 
 def theta_put(S0, K, T, r, sigma):
-    """
-    Calculate the annualized Theta of a European Put.
-    """
-
+    """Return annualized Put theta, i.e. -dV/dT."""
     d1, d2 = _calculate_d1_d2(S0, K, T, r, sigma)
-
-    theta_value = (
-        -S0 * norm.pdf(d1) * sigma / (2 * math.sqrt(T))
+    value = (
+        -S0 * norm.pdf(d1) * sigma / (2.0 * math.sqrt(T))
         + r * K * math.exp(-r * T) * norm.cdf(-d2)
     )
+    return float(value)
 
-    return float(theta_value)
 
 def rho_call(S0, K, T, r, sigma):
-    """
-    Calculate the Rho of a European Call.
-    Expressed for a rate change of 1.00.
-    """
-
-    d1, d2 = _calculate_d1_d2(S0, K, T, r, sigma)
-
-    rho_value = (
-        K * T * math.exp(-r * T) * norm.cdf(d2)
-    )
-
-    return float(rho_value)
+    """Return dV/dr for a continuously compounded rate change as a decimal."""
+    _, d2 = _calculate_d1_d2(S0, K, T, r, sigma)
+    return float(K * T * math.exp(-r * T) * norm.cdf(d2))
 
 
 def rho_put(S0, K, T, r, sigma):
-    """
-    Calculate the Rho of a European Put.
-    Expressed for a rate change of 1.00.
-    """
+    """Return dV/dr for a continuously compounded rate change as a decimal."""
+    _, d2 = _calculate_d1_d2(S0, K, T, r, sigma)
+    return float(-K * T * math.exp(-r * T) * norm.cdf(-d2))
 
-    d1, d2 = _calculate_d1_d2(S0, K, T, r, sigma)
-
-    rho_value = (
-        -K * T * math.exp(-r * T) * norm.cdf(-d2)
-    )
-
-    return float(rho_value)
 
 def calculate_greeks(S0, K, T, r, sigma, option_type="call"):
+    """Return Delta, Gamma, Vega, Theta and Rho for a European option.
+
+    The option is assumed to be European and to pay no dividends.
+    Vega and Rho are per unit (1.00) change in their decimal inputs;
+    Theta is annualized and follows the convention -dV/dT.
     """
-    Calculate all five Greeks of a European option.
+    if not isinstance(option_type, str):
+        raise ValueError("option_type must be 'call' or 'put'")
 
-    Parameters
-    ----------
-    option_type : str
-        "call" or "put"
+    option_type = option_type.strip().lower()
 
-    Returns
-    -------
-    dict
-        Delta, Gamma, Vega, Theta and Rho.
-        Vega and Rho are expressed for a change of 1.00.
-        Theta is annualized.
-    """
-
-    option_type = option_type.lower()
+    if option_type not in {"call", "put"}:
+        raise ValueError("option_type must be 'call' or 'put'")
 
     if option_type == "call":
-
-        return {
-            "Delta": delta_call(S0, K, T, r, sigma),
-            "Gamma": gamma(S0, K, T, r, sigma),
-            "Vega": vega(S0, K, T, r, sigma),
-            "Theta": theta_call(S0, K, T, r, sigma),
-            "Rho": rho_call(S0, K, T, r, sigma)
-        }
-
-    elif option_type == "put":
-
-        return {
-            "Delta": delta_put(S0, K, T, r, sigma),
-            "Gamma": gamma(S0, K, T, r, sigma),
-            "Vega": vega(S0, K, T, r, sigma),
-            "Theta": theta_put(S0, K, T, r, sigma),
-            "Rho": rho_put(S0, K, T, r, sigma)
-        }
-
+        delta = delta_call
+        theta = theta_call
+        rho = rho_call
     else:
-        raise ValueError("option_type must be 'call' or 'put'")
+        delta = delta_put
+        theta = theta_put
+        rho = rho_put
+
+    return {
+        "Delta": delta(S0, K, T, r, sigma),
+        "Gamma": gamma(S0, K, T, r, sigma),
+        "Vega": vega(S0, K, T, r, sigma),
+        "Theta": theta(S0, K, T, r, sigma),
+        "Rho": rho(S0, K, T, r, sigma),
+    }
